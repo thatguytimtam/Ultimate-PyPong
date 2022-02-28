@@ -14,11 +14,13 @@ font = pygame.font.Font('assets/fonts/Market_Deco.ttf', 36)
 #### STATIC SPRITES ####
 player_purple = pygame.image.load("assets/sprites/player_purple.png").convert_alpha()
 player_red = pygame.image.load("assets/sprites/player_red.png").convert_alpha()
+player_shadow = pygame.image.load("assets/sprites/player_shadow.png").convert_alpha()
 
 background = pygame.image.load("assets/sprites/background.png").convert_alpha()
 title_text = pygame.image.load("assets/fonts/title.png")
 
 ball_surface = pygame.image.load("assets/sprites/ball.png").convert_alpha()
+ball_shadow = pygame.image.load("assets/sprites/ball_shadow.png").convert_alpha()
 
 start_btn = pygame.image.load("assets/sprites/start_btn.png").convert_alpha()
 start_btn_black = pygame.image.load("assets/sprites/start_btn_black.png").convert_alpha()
@@ -52,6 +54,9 @@ class Players:
 	def draw(self):
 		win.blit(self.sprite1, self.rect1) # display player 1
 		win.blit(self.sprite2, self.rect2) # display player 2
+
+		win.blit(player_shadow, (self.rect1[0] + 30, self.rect1[1] - 50))
+		win.blit(player_shadow, (self.rect2[0] + 30, self.rect2[1] - 50))
 	
 	def handle_movement(self):
 		keys = pygame.key.get_pressed() # shortcut for keys
@@ -84,6 +89,8 @@ class Environment:
 		if self.bgx <= -1400:
 			self.bgx = 0
 			self.bgy = -1000
+		
+		win.blit(vignette, (0,0))
 
 	def draw_title(self):
 		win.blit(title_text, self.title_rect)
@@ -116,6 +123,8 @@ class Ball:
 	
 	def draw(self):
 		win.blit(self.sprite, self.rect)
+		win.blit(ball_shadow, (self.rect[0] + 30, self.rect[1] - 50))
+
 	
 	def move(self):
 		global score1, score2
