@@ -133,10 +133,14 @@ class Ball:
 		self.rect.y += self.yspeed
 		if self.rect.y >= WinHeight-10:
 			self.yspeed = -self.yspeed
+			if self.rect.x < winWidth and self.rect.x > 0:
+				hit_sound.play()
 		#if self.rect.x >= winWidth-10:
 		#	self.xspeed = -self.xspeed
 		if self.rect.y <= 0:
 			self.yspeed = -self.yspeed
+			if self.rect.x < winWidth and self.rect.x > 0:
+				hit_sound.play()
 		#if self.rect.x <= 0:
 		#	self.xspeed = -self.xspeed
 		
@@ -150,13 +154,16 @@ class Ball:
 			if self.xspeed < 0: self.xspeed -= 0.2
 			if self.yspeed > 0: self.yspeed += 0.2
 			if self.yspeed < 0: self.yspeed -= 0.2
+			hit_sound.play()
 
 		if self.rect.x > winWidth or self.rect.x < 0:
 			if self.rect.x > winWidth and self.hasScored == False:
 				score1 += 1
+				win_sound.play()
 				self.hasScored = True
 			elif self.rect.x < 0 and self.hasScored == False:
 				score2 += 1
+				win_sound.play()
 				self.hasScored = True
 			players.speed = 1
 			env.speed = 0.1
@@ -217,9 +224,16 @@ env = Environment(0, -1000, 2, winWidth/2, 100)
 
 #### STATIC VARIABLES ####
 gameActive = False
-#song1 = pygame.mixer.Sound('assets/music/song1.mp3')
-#song1.play(loops = -1)
 FPS = 240
+
+# Sounds
+song1 = pygame.mixer.Sound('assets/music/song1.mp3')
+song1.play(loops = -1)
+hit_sound  = pygame.mixer.Sound('assets/sfx/hit.wav')
+hit_sound.set_volume(0.2)
+select_sound  = pygame.mixer.Sound('assets/sfx/select.wav')
+select_sound.set_volume(0.1)
+win_sound  = pygame.mixer.Sound('assets/sfx/win.wav')
 
 score1, score2 = -1,0
 #### STATIC VARIABLES ####
@@ -232,6 +246,7 @@ while True:
 			pygame.quit()
 		if event.type == pygame.MOUSEBUTTONDOWN and env.draw_playbutton() == True:
 			gameActive = True
+			select_sound.play()
 
 	env.draw_background()
 	env.draw_title()
