@@ -8,7 +8,7 @@ winWidth, WinHeight = 800, 500
 win = pygame.display.set_mode((winWidth, WinHeight))
 pygame.display.set_caption('PyPong')
 clock = pygame.time.Clock()
-font1 = pygame.font.SysFont('Calibri', 25)
+font = pygame.font.Font('assets/fonts/Market_Deco.ttf', 36)
 #### PYGAME AND WINDOW INIT. ####
 
 #### STATIC SPRITES ####
@@ -19,6 +19,12 @@ background = pygame.image.load("assets/sprites/background.png").convert_alpha()
 title_text = pygame.image.load("assets/fonts/title.png")
 
 ball_surface = pygame.image.load("assets/sprites/ball.png").convert_alpha()
+
+start_btn = pygame.image.load("assets/sprites/start_btn.png").convert_alpha()
+start_btn_black = pygame.image.load("assets/sprites/start_btn_black.png").convert_alpha()
+
+vignette = pygame.image.load("assets/sprites/vignette.png").convert_alpha()
+
 #### STATIC SPRITES ####
 
 
@@ -49,7 +55,7 @@ class Players:
 	
 	def handle_movement(self):
 		keys = pygame.key.get_pressed() # shortcut for keys
-		if keys[pygame.K_z] and self.rect1.midtop[1] >= 0:
+		if keys[pygame.K_w] and self.rect1.midtop[1] >= 0:
 			self.rect1.y -= self.speed # increasing the y value while checking if rect is not out of bounds
 		if keys[pygame.K_s] and self.rect1.midbottom[1] <= WinHeight:
 			self.rect1.y += self.speed 
@@ -68,6 +74,8 @@ class Environment:
 		self.title_x = title_x
 		self.title_y = title_y
 		self.title_rect = title_text.get_rect(center = (self.title_x, self.title_y))
+		self.btn_rect = start_btn.get_rect(center = (winWidth/2, 400))
+
 
 	def draw_background(self):
 		win.blit(background, (self.bgx, self.bgy))
@@ -79,6 +87,17 @@ class Environment:
 
 	def draw_title(self):
 		win.blit(title_text, self.title_rect)
+
+	def draw_playbutton(self):
+		win.blit(start_btn, self.btn_rect)
+		cursor_rect = ball_surface.get_rect(center = (pygame.mouse.get_pos()[0], pygame.mouse.get_pos()[1]))
+		
+		if cursor_rect.colliderect(self.btn_rect):
+			win.blit(start_btn_black, self.btn_rect)
+			return True
+		else:
+			win.blit(start_btn, self.btn_rect)
+			return False
 
 players = Players(50, WinHeight/2, winWidth - 50, WinHeight / 2, 5, player_purple, player_red)
 class Ball:
@@ -93,11 +112,14 @@ class Ball:
 		self.rect = self.sprite.get_rect(center = (winWidth/2 + 1000, WinHeight/2))
 
 		self.repsawn_timer = respawn_timer
+		self.hasScored = False
 	
 	def draw(self):
 		win.blit(self.sprite, self.rect)
 	
 	def move(self):
+		global score1, score2
+		print(self.rect.x)
 		self.rect.x += self.xspeed
 		self.rect.y += self.yspeed
 		if self.rect.y >= WinHeight-10:
@@ -110,13 +132,23 @@ class Ball:
 		#	self.xspeed = -self.xspeed
 		
 		if self.rect.colliderect(players.rect1) or self.rect.colliderect(players.rect2):
+			if self.rect.colliderect(players.rect1):
+				self.rect.x = 60
+			elif self.rect.colliderect(players.rect2):
+				self.rect.x = winWidth - 80
 			self.xspeed = -self.xspeed
 			if self.xspeed > 0: self.xspeed += 0.2
 			if self.xspeed < 0: self.xspeed -= 0.2
 			if self.yspeed > 0: self.yspeed += 0.2
 			if self.yspeed < 0: self.yspeed -= 0.2
-		
+
 		if self.rect.x > winWidth or self.rect.x < 0:
+			if self.rect.x > winWidth and self.hasScored == False:
+				score1 += 1
+				self.hasScored = True
+			elif self.rect.x < 0 and self.hasScored == False:
+				score2 += 1
+				self.hasScored = True
 			players.speed = 1
 			env.speed = 0.1
 			self.repsawn_timer += 1
@@ -133,7 +165,7 @@ class Ball:
 				else:
 					self.xspeed, self.yspeed = 2, 2
 				self.rect.x, self.rect.y = winWidth/2, WinHeight/2
-
+				self.hasScored = False
 
 
 ball = Ball(winWidth/2, WinHeight/2, 1, 1, ball_surface, 0)
@@ -179,6 +211,8 @@ gameActive = False
 #song1 = pygame.mixer.Sound('assets/music/song1.mp3')
 #song1.play(loops = -1)
 FPS = 240
+
+score1, score2 = -1,0
 #### STATIC VARIABLES ####
 
 #### --------------------------------------------------------------------------------------- GAME LOOP ####
@@ -187,15 +221,17 @@ while True:
 	for event in pygame.event.get():
 		if event.type == pygame.QUIT:
 			pygame.quit()
+		if event.type == pygame.MOUSEBUTTONDOWN and env.draw_playbutton() == True:
+			gameActive = True
 
 	env.draw_background()
 	env.draw_title()
 
 	#### TITLE SCREEN ####
 	if gameActive == False: 
-		keys = pygame.key.get_pressed()
-		if keys[pygame.K_SPACE]:
-			gameActive = True
+		env.draw_playbutton()
+
+			
 
 	#### TITLE SCREEN ####
 
@@ -203,8 +239,14 @@ while True:
 	
 	#### MAIN GAME ####
 	else:
+		score_text = font.render(f'{score1}:{score2}', True, (0,0,0))
+		win.blit(score_text, (winWidth/2 - score_text.get_width()/2, 100))
 		if env.title_rect.y > -500:
-			env.title_rect.y += 1
+			env.title_rect.y -= 1
+		
+		keys = pygame.key.get_pressed()
+		if keys[pygame.K_ESCAPE]:
+			gameActive = False
 
 	
 		players.draw()
