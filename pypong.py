@@ -1,4 +1,4 @@
-import pygame, random, math
+import pygame, random, math, time
 
 #### PYGAME AND WINDOW INIT. ####
 pygame.init()
@@ -16,6 +16,7 @@ player_purple = pygame.image.load("assets/sprites/player_purple.png").convert_al
 player_red = pygame.image.load("assets/sprites/player_red.png").convert_alpha()
 
 background = pygame.image.load("assets/sprites/background.png").convert_alpha()
+title_text = pygame.image.load("assets/fonts/title.png")
 
 ball_surface = pygame.image.load("assets/sprites/ball.png").convert_alpha()
 #### STATIC SPRITES ####
@@ -59,21 +60,29 @@ class Players:
 			self.rect2.y += self.speed 
 		
 class Environment:
-	def __init__(self, bgx, bgy):
+	def __init__(self, bgx, bgy, speed, title_x, title_y):
 		self.bgx = bgx
 		self.bgy = bgy
 		self.bg = background
-	def draw(self):
+		self.speed = speed
+		self.title_x = title_x
+		self.title_y = title_y
+		self.title_rect = title_text.get_rect(center = (self.title_x, self.title_y))
+
+	def draw_background(self):
 		win.blit(background, (self.bgx, self.bgy))
-		self.bgx -= 1
-		self.bgy += 1
+		self.bgx -= self.speed
+		self.bgy += self.speed
 		if self.bgx <= -1400:
 			self.bgx = 0
 			self.bgy = -1000
 
-players = Players(50, WinHeight/2, winWidth - 50, WinHeight / 2, 4, player_purple, player_red)
+	def draw_title(self):
+		win.blit(title_text, self.title_rect)
+
+players = Players(50, WinHeight/2, winWidth - 50, WinHeight / 2, 5, player_purple, player_red)
 class Ball:
-	def __init__(self, x, y, yspeed, xspeed, sprite):
+	def __init__(self, x, y, yspeed, xspeed, sprite, respawn_timer):
 		self.x = x
 		self.y = y
 
@@ -81,7 +90,9 @@ class Ball:
 		self.yspeed = yspeed
 		
 		self.sprite = sprite
-		self.rect = self.sprite.get_rect(center = (winWidth/2, WinHeight/2))
+		self.rect = self.sprite.get_rect(center = (winWidth/2 + 1000, WinHeight/2))
+
+		self.repsawn_timer = respawn_timer
 	
 	def draw(self):
 		win.blit(self.sprite, self.rect)
@@ -91,23 +102,41 @@ class Ball:
 		self.rect.y += self.yspeed
 		if self.rect.y >= WinHeight-10:
 			self.yspeed = -self.yspeed
-		if self.rect.x >= winWidth-10:
-			self.xspeed = -self.xspeed
+		#if self.rect.x >= winWidth-10:
+		#	self.xspeed = -self.xspeed
 		if self.rect.y <= 0:
 			self.yspeed = -self.yspeed
-		if self.rect.x <= 0:
-			self.xspeed = -self.xspeed
+		#if self.rect.x <= 0:
+		#	self.xspeed = -self.xspeed
 		
 		if self.rect.colliderect(players.rect1) or self.rect.colliderect(players.rect2):
 			self.xspeed = -self.xspeed
+			if self.xspeed > 0: self.xspeed += 0.2
+			if self.xspeed < 0: self.xspeed -= 0.2
+			if self.yspeed > 0: self.yspeed += 0.2
+			if self.yspeed < 0: self.yspeed -= 0.2
 		
-		if self.rect.x > players.rect2.x or self.rect.x < players.rect1.x:
-			FPS = 60
-		else:
-			FPS = 240
+		if self.rect.x > winWidth or self.rect.x < 0:
+			players.speed = 1
+			env.speed = 0.1
+			self.repsawn_timer += 1
+			if self.repsawn_timer > 500 and self.repsawn_timer < 1000:
+				self.xspeed = 0
+				self.yspeed = 0
+				win.blit(ball_surface, (winWidth/2 - 10, WinHeight/2 - 10))
+			if self.repsawn_timer > 1000:
+				players.speed = 4
+				env.speed = 1
+				self.repsawn_timer = 0
+				if self.rect.x > 1000:
+					self.xspeed, self.yspeed = -2, 2
+				else:
+					self.xspeed, self.yspeed = 2, 2
+				self.rect.x, self.rect.y = winWidth/2, WinHeight/2
 
 
-ball = Ball(winWidth/2, WinHeight/2, 2, 2, ball_surface)
+
+ball = Ball(winWidth/2, WinHeight/2, 1, 1, ball_surface, 0)
 
 class ParticlePrinciple:
 	def __init__(self):
@@ -142,15 +171,14 @@ particle1 = ParticlePrinciple()
 #### CLASSES ####
 
 #### CLASS INIT. ####
-env = Environment(0, -1000)
+env = Environment(0, -1000, 2, winWidth/2, 100)
 #### CLASS INIT. ####
 
 #### STATIC VARIABLES ####
-gameActive = True
+gameActive = False
 #song1 = pygame.mixer.Sound('assets/music/song1.mp3')
 #song1.play(loops = -1)
 FPS = 240
-
 #### STATIC VARIABLES ####
 
 #### --------------------------------------------------------------------------------------- GAME LOOP ####
@@ -160,11 +188,14 @@ while True:
 		if event.type == pygame.QUIT:
 			pygame.quit()
 
-	env.draw()
+	env.draw_background()
+	env.draw_title()
 
 	#### TITLE SCREEN ####
 	if gameActive == False: 
-		pass
+		keys = pygame.key.get_pressed()
+		if keys[pygame.K_SPACE]:
+			gameActive = True
 
 	#### TITLE SCREEN ####
 
@@ -172,6 +203,10 @@ while True:
 	
 	#### MAIN GAME ####
 	else:
+		if env.title_rect.y > -500:
+			env.title_rect.y += 1
+
+	
 		players.draw()
 		players.handle_movement()
 		particle1.add_particles()
